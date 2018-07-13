@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact build-on-make="true" name="ParseAndroidResource:jar">
+    <output-path>$PROJECT_DIR$/classes/artifacts/ParseAndroidResource_jar</output-path>
+    <root id="root">
+      <element id="archive" name="ParseAndroidResource.jar">
+        <element id="module-output" name="ParseAndroidResource" />
+      </element>
+    </root>
+  </artifact>
+</component>

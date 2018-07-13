@@ -1,627 +1,632 @@
 package com.wjdiankong.parseresource;
 
+import com.wjdiankong.parseresource.type.*;
+
 import java.util.ArrayList;
 
-import com.wjdiankong.parseresource.type.ResChunkHeader;
-import com.wjdiankong.parseresource.type.ResStringPoolHeader;
-import com.wjdiankong.parseresource.type.ResStringPoolRef;
-import com.wjdiankong.parseresource.type.ResTableConfig;
-import com.wjdiankong.parseresource.type.ResTableEntry;
-import com.wjdiankong.parseresource.type.ResTableHeader;
-import com.wjdiankong.parseresource.type.ResTableMap;
-import com.wjdiankong.parseresource.type.ResTableMapEntry;
-import com.wjdiankong.parseresource.type.ResTablePackage;
-import com.wjdiankong.parseresource.type.ResTableRef;
-import com.wjdiankong.parseresource.type.ResTableType;
-import com.wjdiankong.parseresource.type.ResTableTypeSpec;
-import com.wjdiankong.parseresource.type.ResValue;
-
 public class ParseResourceUtils {
-	
-	private static int resStringPoolChunkOffset;//×Ö·û´®³ØµÄÆ«ÒÆÖµ
-	private static int packageChunkOffset;//°üÄÚÈÝµÄÆ«ÒÆÖµ
-	private static int keyStringPoolChunkOffset;//key×Ö·û´®³ØµÄÆ«ÒÆÖµ
-	private static int typeStringPoolChunkOffset;//ÀàÐÍ×Ö·û´®³ØµÄÆ«ÒÆÖµ
-	
-	//½âÎö×ÊÔ´µÄÀàÐÍµÄÆ«ÒÆÖµ
-	private static int resTypeOffset;
-	
-	private static ArrayList<String> resStringList = new ArrayList<String>();//ËùÓÐµÄ×Ö·û´®³Ø
-	private static ArrayList<String> keyStringList = new ArrayList<String>();//ËùÓÐµÄ×ÊÔ´keyµÄÖµµÄ³Ø
-	private static ArrayList<String> typeStringList = new ArrayList<String>();//ËùÓÐÀàÐÍµÄÖµµÄ³Ø
-	
-	//×ÊÔ´°üµÄidºÍÀàÐÍid
-	private static int packId;
-	private static int resTypeId;
-	
-	/**
-	 * ½âÎöÍ·²¿ÐÅÏ¢
-	 * @param src
-	 */
-	public static void parseResTableHeaderChunk(byte[] src){
-		ResTableHeader resTableHeader = new ResTableHeader();
-		
-		resTableHeader.header = parseResChunkHeader(src, 0);
-		
-		resStringPoolChunkOffset = resTableHeader.header.headerSize;
-		
-		//½âÎöPackageCount¸öÊý(Ò»¸öapk¿ÉÄÜ°üº¬¶à¸öPackage×ÊÔ´)
-		byte[] packageCountByte = Utils.copyByte(src, resTableHeader.header.getHeaderSize(), 4);
-		resTableHeader.packageCount = Utils.byte2int(packageCountByte);
-		
-	}
-	
-	/**
-	 * ½âÎöResource.arscÎÄ¼þÖÐËùÓÐ×Ö·û´®ÄÚÈÝ
-	 * @param src
-	 */
-	public static void parseResStringPoolChunk(byte[] src){
-		ResStringPoolHeader stringPoolHeader = parseStringPoolChunk(src, resStringList, resStringPoolChunkOffset);
-		packageChunkOffset = resStringPoolChunkOffset + stringPoolHeader.header.size;
-	}
-	
-	/**
-	 * ½âÎöPackageÐÅÏ¢
-	 * @param src
-	 */
-	public static void parsePackage(byte[] src){
-		System.out.println("pchunkoffset:"+Utils.bytesToHexString(Utils.int2Byte(packageChunkOffset)));
-		ResTablePackage resTabPackage = new ResTablePackage();
-		//½âÎöÍ·²¿ÐÅÏ¢
-		resTabPackage.header = parseResChunkHeader(src, packageChunkOffset);
-		
-		System.out.println("package size:"+resTabPackage.header.headerSize);
-		
-		int offset = packageChunkOffset + resTabPackage.header.getHeaderSize();
-		
-		//½âÎöpackId
-		byte[] idByte = Utils.copyByte(src, offset, 4);
-		resTabPackage.id = Utils.byte2int(idByte);
-		packId = resTabPackage.id;
-		
-		//½âÎö°üÃû
-		System.out.println("package offset:"+Utils.bytesToHexString(Utils.int2Byte(offset+4)));
-		byte[] nameByte = Utils.copyByte(src, offset+4, 128*2);//ÕâÀïµÄ128ÊÇÕâ¸ö×Ö¶ÎµÄ´óÐ¡£¬¿ÉÒÔ²é¿´ÀàÐÍËµÃ÷£¬ÊÇcharÀàÐÍµÄ£¬ËùÒÔÒª³ËÒÔ2
-		String packageName = new String(nameByte);
-		packageName = Utils.filterStringNull(packageName);
-		System.out.println("pkgName:"+packageName);
-		
-		//½âÎöÀàÐÍ×Ö·û´®µÄÆ«ÒÆÖµ
-		byte[] typeStringsByte = Utils.copyByte(src, offset+4+128*2, 4);
-		resTabPackage.typeStrings = Utils.byte2int(typeStringsByte);
-		System.out.println("typeString:"+resTabPackage.typeStrings);
-		
-		//½âÎölastPublicType×Ö¶Î
-		byte[] lastPublicType = Utils.copyByte(src, offset+8+128*2, 4);
-		resTabPackage.lastPublicType = Utils.byte2int(lastPublicType);
-		
-		//½âÎökeyString×Ö·û´®µÄÆ«ÒÆÖµ
-		byte[] keyStrings = Utils.copyByte(src, offset+12+128*2, 4);
-		resTabPackage.keyStrings = Utils.byte2int(keyStrings);
-		System.out.println("keyString:"+resTabPackage.keyStrings);
-		
-		//½âÎölastPublicKey
-		byte[] lastPublicKey = Utils.copyByte(src, offset+12+128*2, 4);
-		resTabPackage.lastPublicKey = Utils.byte2int(lastPublicKey);
-		
-		//ÕâÀï»ñÈ¡ÀàÐÍ×Ö·û´®µÄÆ«ÒÆÖµºÍÀàÐÍ×Ö·û´®µÄÆ«ÒÆÖµ
-		keyStringPoolChunkOffset = (packageChunkOffset+resTabPackage.keyStrings);
-		typeStringPoolChunkOffset = (packageChunkOffset+resTabPackage.typeStrings);
-		
-	}
-	
-	/**
-	 * ½âÎöÀàÐÍ×Ö·û´®ÄÚÈÝ
-	 * @param src
-	 */
-	public static void parseTypeStringPoolChunk(byte[] src){
-		System.out.println("typestring offset:"+Utils.bytesToHexString(Utils.int2Byte(typeStringPoolChunkOffset)));
-		ResStringPoolHeader stringPoolHeader = parseStringPoolChunk(src, typeStringList, typeStringPoolChunkOffset);
-		System.out.println("size:"+stringPoolHeader.header.size);
-	}
-	
-	/**
-	 * ½âÎökey×Ö·û´®ÄÚÈÝ
-	 * @param src
-	 */
-	public static void parseKeyStringPoolChunk(byte[] src){
-		System.out.println("keystring offset:"+Utils.bytesToHexString(Utils.int2Byte(keyStringPoolChunkOffset)));
-		ResStringPoolHeader stringPoolHeader  = parseStringPoolChunk(src, keyStringList, keyStringPoolChunkOffset);
-		System.out.println("size:"+stringPoolHeader.header.size);
-		//½âÎöÍêkey×Ö·û´®Ö®ºó£¬ÐèÒª¸³Öµ¸øresTypeµÄÆ«ÒÆÖµ,ºóÐø»¹ÐèÒª¼ÌÐø½âÎö
-		resTypeOffset = (keyStringPoolChunkOffset+stringPoolHeader.header.size);
-	}
-	
-	/**
-	 * ½âÎöResTypeSepcÀàÐÍÃèÊöÄÚÈÝ
-	 * @param src
-	 */
-	public static void parseResTypeSpec(byte[] src){
-		System.out.println("res type spec offset:"+Utils.bytesToHexString(Utils.int2Byte(resTypeOffset)));
-		ResTableTypeSpec typeSpec = new ResTableTypeSpec();
-		//½âÎöÍ·²¿ÐÅÏ¢
-		typeSpec.header = parseResChunkHeader(src, resTypeOffset);
-		
-		int offset = (resTypeOffset + typeSpec.header.getHeaderSize());
-		
-		//½âÎöidÀàÐÍ
-		byte[] idByte = Utils.copyByte(src, offset, 1);
-		typeSpec.id = (byte)(idByte[0] & 0xFF);
-		resTypeId = typeSpec.id;
-		
-		//½âÎöres0×Ö¶Î,Õâ¸ö×Ö¶ÎÊÇ±¸ÓÃµÄ£¬Ê¼ÖÕÊÇ0
-		byte[] res0Byte = Utils.copyByte(src, offset+1, 1);
-		typeSpec.res0 = (byte)(res0Byte[0] & 0xFF);
-		
-		//½âÎöres1×Ö¶Î£¬Õâ¸ö×Ö¶ÎÊÇ±¸ÓÃµÄ£¬Ê¼ÖÕÊÇ0
-		byte[] res1Byte = Utils.copyByte(src, offset+2, 2);
-		typeSpec.res1 = Utils.byte2Short(res1Byte);
-		
-		//entryµÄ×Ü¸öÊý
-		byte[] entryCountByte = Utils.copyByte(src, offset+4, 4);
-		typeSpec.entryCount = Utils.byte2int(entryCountByte);
-		
-		System.out.println("res type spec:"+typeSpec);
-		
-		System.out.println("type_name:"+typeStringList.get(typeSpec.id-1));
-		
-		//»ñÈ¡entryCount¸öintÊý×é
-		int[] intAry = new int[typeSpec.entryCount];
-		int intAryOffset = resTypeOffset + typeSpec.header.headerSize;
-		System.out.print("int element:");
-		for(int i=0;i<typeSpec.entryCount;i++){
-			int element = Utils.byte2int(Utils.copyByte(src, intAryOffset+i*4, 4));
-			intAry[i] = element;
-			System.out.print(element+",");
-		}
-		System.out.println();
-		
-		resTypeOffset += typeSpec.header.size;
-		
-	}
-	
-	/**
-	 * ½âÎöÀàÐÍÐÅÏ¢ÄÚÈÝ
-	 * @param src
-	 */
-	public static void parseResTypeInfo(byte[] src){
-		System.out.println("type chunk offset:"+Utils.bytesToHexString(Utils.int2Byte(resTypeOffset)));
-		ResTableType type = new ResTableType();
-		//½âÎöÍ·²¿ÐÅÏ¢
-		type.header = parseResChunkHeader(src, resTypeOffset);
-		
-		int offset = (resTypeOffset + type.header.getHeaderSize());
-		
-		//½âÎötypeµÄidÖµ
-		byte[] idByte = Utils.copyByte(src, offset, 1);
-		type.id = (byte)(idByte[0] & 0xFF);
-		
-		//½âÎöres0×Ö¶ÎµÄÖµ£¬±¸ÓÃ×Ö¶Î£¬Ê¼ÖÕÊÇ0
-		byte[] res0 = Utils.copyByte(src, offset+1, 1);
-		type.res0 = (byte)(res0[0] & 0xFF);
-		
-		//½âÎöres1×Ö¶ÎµÄÖµ£¬±¸ÓÃ×Ö¶Î£¬Ê¼ÖÕÊÇ0
-		byte[] res1 = Utils.copyByte(src, offset+2, 2);
-		type.res1 = Utils.byte2Short(res1);
-		
-		byte[] entryCountByte = Utils.copyByte(src, offset+4, 4);
-		type.entryCount = Utils.byte2int(entryCountByte);
-		
-		byte[] entriesStartByte = Utils.copyByte(src, offset+8, 4);
-		type.entriesStart = Utils.byte2int(entriesStartByte);
-		
-		ResTableConfig resConfig = new ResTableConfig();
-		resConfig = parseResTableConfig(Utils.copyByte(src, offset+12, resConfig.getSize()));
-		System.out.println("config:"+resConfig);
-		
-		System.out.println("res type info:"+type);
-		
-		System.out.println("type_name:"+typeStringList.get(type.id-1));
-		
-		//ÏÈ»ñÈ¡entryCount¸öintÊý×é
-		System.out.print("type int elements:");
-		int[] intAry = new int[type.entryCount];
-		for(int i=0;i<type.entryCount;i++){
-			int element = Utils.byte2int(Utils.copyByte(src, resTypeOffset+type.header.headerSize+i*4, 4));
-			intAry[i] = element;
-			System.out.print(element+",");
-		}
-		System.out.println();
-		
-		//ÕâÀï¿ªÊ¼½âÎöºóÃæ¶ÔÓ¦µÄResEntryºÍResValue
-		int entryAryOffset = resTypeOffset + type.entriesStart;
-		ResTableEntry[] tableEntryAry = new ResTableEntry[type.entryCount];
-		ResValue[] resValueAry = new ResValue[type.entryCount];
-		System.out.println("entry offset:"+Utils.bytesToHexString(Utils.int2Byte(entryAryOffset)));
-		
-		//ÕâÀï´æÔÚÒ»¸öÎÊÌâ¾ÍÊÇÈç¹ûÊÇResMapEntryµÄ»°£¬Æ«ÒÆÖµÊÇ²»Ò»ÑùµÄ£¬ËùÒÔÕâÀïÐèÒª¼ÆËã²»Í¬µÄÆ«ÒÆÖµ
-		int bodySize = 0, valueOffset = entryAryOffset;
-		for(int i=0;i<type.entryCount;i++){
-			int resId = getResId(i);
-			System.out.println("resId:"+Utils.bytesToHexString(Utils.int2Byte(resId)));
-			ResTableEntry entry = new ResTableEntry();
-			ResValue value = new ResValue();
-			valueOffset += bodySize;
-			System.out.println("valueOffset:"+Utils.bytesToHexString(Utils.int2Byte(valueOffset)));
-			entry = parseResEntry(Utils.copyByte(src, valueOffset, entry.getSize()));
-			
-			//ÕâÀïÐèÒª×¢ÒâµÄÊÇ£¬ÏÈÅÐ¶ÏentryµÄflag±äÁ¿ÊÇ·ñÎª1,Èç¹ûÎª1µÄ»°£¬ÄÇ¾ÍResTable_map_entry
-			if(entry.flags == 1){
-				//ÕâÀïÊÇ¸´ÔÓÀàÐÍµÄvalue
-				ResTableMapEntry mapEntry = new ResTableMapEntry();
-				mapEntry = parseResMapEntry(Utils.copyByte(src, valueOffset, mapEntry.getSize()));
-				System.out.println("map entry:"+mapEntry);
-				ResTableMap resMap = new ResTableMap();
-				for(int j=0;j<mapEntry.count;j++){
-					int mapOffset = valueOffset + mapEntry.getSize() + resMap.getSize()*j;
-					resMap = parseResTableMap(Utils.copyByte(src, mapOffset, resMap.getSize()));
-					System.out.println("map:"+resMap);
-				}
-				bodySize = mapEntry.getSize() + resMap.getSize()*mapEntry.count;
-			}else{
-				System.out.println("entry:"+entry);
-				//ÕâÀïÊÇ¼òµ¥µÄÀàÐÍµÄvalue
-				value = parseResValue(Utils.copyByte(src, valueOffset+entry.getSize(), value.getSize()));
-				System.out.println("value:"+value);
-				bodySize = entry.getSize()+value.getSize();
-			}
-			
-			tableEntryAry[i] = entry;
-			resValueAry[i] = value;
-			
-			System.out.println("======================================");
-		}
-		
-		resTypeOffset += type.header.size;
-		
-	}
-	
-	/**
-	 * ½âÎöResEntryÄÚÈÝ
-	 * @param src
-	 * @return
-	 */
-	public static ResTableEntry parseResEntry(byte[] src){
-		ResTableEntry entry = new ResTableEntry();
-		
-		byte[] sizeByte = Utils.copyByte(src, 0, 2);
-		entry.size = Utils.byte2Short(sizeByte);
-		
-		byte[] flagByte = Utils.copyByte(src, 2, 2);
-		entry.flags = Utils.byte2Short(flagByte);
-		
-		ResStringPoolRef key = new ResStringPoolRef();
-		byte[] keyByte = Utils.copyByte(src, 4, 4);
-		key.index = Utils.byte2int(keyByte);
-		entry.key = key;
-		
-		return entry;
-	}
-	
-	/**
-	 * ½âÎöResMapEntryÄÚÈÝ
-	 * @param src
-	 * @return
-	 */
-	public static ResTableMapEntry parseResMapEntry(byte[] src){
-		ResTableMapEntry entry = new ResTableMapEntry();
-		
-		byte[] sizeByte = Utils.copyByte(src, 0, 2);
-		entry.size = Utils.byte2Short(sizeByte);
-		
-		byte[] flagByte = Utils.copyByte(src, 2, 2);
-		entry.flags = Utils.byte2Short(flagByte);
-		
-		ResStringPoolRef key = new ResStringPoolRef();
-		byte[] keyByte = Utils.copyByte(src, 4, 4);
-		key.index = Utils.byte2int(keyByte);
-		entry.key = key;
-		
-		ResTableRef ref = new ResTableRef();
-		byte[] identByte = Utils.copyByte(src, 8, 4);
-		ref.ident = Utils.byte2int(identByte);
-		entry.parent = ref;
-		byte[] countByte = Utils.copyByte(src, 12, 4);
-		entry.count = Utils.byte2int(countByte);
-		
-		return entry;
-	}
-	
-	/**
-	 * ½âÎöResValueÄÚÈÝ
-	 * @param src
-	 * @return
-	 */
-	public static ResValue parseResValue(byte[] src){
-		ResValue resValue = new ResValue();
-		byte[] sizeByte = Utils.copyByte(src, 0, 2);
-		resValue.size = Utils.byte2Short(sizeByte);
-		
-		byte[] res0Byte = Utils.copyByte(src, 2, 1);
-		resValue.res0 = (byte)(res0Byte[0] & 0xFF);
-		
-		byte[] dataType = Utils.copyByte(src, 3, 1);
-		resValue.dataType = (byte)(dataType[0] & 0xFF);
-		
-		byte[] data = Utils.copyByte(src, 4, 4);
-		resValue.data = Utils.byte2int(data);
-		
-		return resValue;
-	}
-	
-	/**
-	 * ½âÎöResTableMapÄÚÈÝ
-	 * @param src
-	 * @return
-	 */
-	public static ResTableMap parseResTableMap(byte[] src){
-		ResTableMap tableMap = new ResTableMap();
-		
-		ResTableRef ref = new ResTableRef();
-		byte[] identByte = Utils.copyByte(src, 0, ref.getSize());
-		ref.ident = Utils.byte2int(identByte);
-		tableMap.name = ref;
-		
-		ResValue value = new ResValue();
-		value = parseResValue(Utils.copyByte(src, ref.getSize(), value.getSize()));
-		tableMap.value = value;
-		
-		return tableMap;
-		
-	}
-	
-	/**
-	 * ½âÎöResTableConfigÅäÖÃÐÅÏ¢
-	 * @param src
-	 * @return
-	 */
-	public static ResTableConfig parseResTableConfig(byte[] src){
-		ResTableConfig config = new ResTableConfig();
-		
-		byte[] sizeByte = Utils.copyByte(src, 0, 4);
-		config.size = Utils.byte2int(sizeByte);
-		
-		//ÒÔÏÂ½á¹¹ÊÇUnion
-		byte[] mccByte = Utils.copyByte(src, 4, 2);
-		config.mcc = Utils.byte2Short(mccByte);
-		byte[] mncByte = Utils.copyByte(src, 6, 2);
-		config.mnc = Utils.byte2Short(mncByte);
-		byte[] imsiByte = Utils.copyByte(src, 4, 4);
-		config.imsi = Utils.byte2int(imsiByte);
-		
-		//ÒÔÏÂ½á¹¹ÊÇUnion
-		byte[] languageByte = Utils.copyByte(src, 8, 2);
-		config.language = languageByte;
-		byte[] countryByte = Utils.copyByte(src, 10, 2);
-		config.country = countryByte;
-		byte[] localeByte = Utils.copyByte(src, 8, 4);
-		config.locale = Utils.byte2int(localeByte);
-		
-		//ÒÔÏÂ½á¹¹ÊÇUnion
-		byte[] orientationByte = Utils.copyByte(src, 12, 1);
-		config.orientation = orientationByte[0];
-		byte[] touchscreenByte = Utils.copyByte(src, 13, 1);
-		config.touchscreen = touchscreenByte[0];
-		byte[] densityByte = Utils.copyByte(src, 14, 2);
-		config.density = Utils.byte2Short(densityByte);
-		byte[] screenTypeByte = Utils.copyByte(src, 12, 4);
-		config.screenType = Utils.byte2int(screenTypeByte);
-		
-		//ÒÔÏÂ½á¹¹ÊÇUnion
-		byte[] keyboardByte = Utils.copyByte(src, 16, 1);
-		config.keyboard = keyboardByte[0];
-		byte[] navigationByte = Utils.copyByte(src, 17, 1);
-		config.navigation = navigationByte[0];
-		byte[] inputFlagsByte = Utils.copyByte(src, 18, 1);
-		config.inputFlags = inputFlagsByte[0];
-		byte[] inputPad0Byte = Utils.copyByte(src, 19, 1);
-		config.inputPad0 = inputPad0Byte[0];
-		byte[] inputByte = Utils.copyByte(src, 16, 4);
-		config.input = Utils.byte2int(inputByte);
-		
-		//ÒÔÏÂ½á¹¹ÊÇUnion
-		byte[] screenWidthByte = Utils.copyByte(src, 20, 2);
-		config.screenWidth = Utils.byte2Short(screenWidthByte);
-		byte[] screenHeightByte = Utils.copyByte(src, 22, 2);
-		config.screenHeight = Utils.byte2Short(screenHeightByte);
-		byte[] screenSizeByte = Utils.copyByte(src, 20, 4);
-		config.screenSize = Utils.byte2int(screenSizeByte);
-		
-		//ÒÔÏÂ½á¹¹ÊÇUnion
-		byte[] sdVersionByte = Utils.copyByte(src, 24, 2);
-		config.sdVersion = Utils.byte2Short(sdVersionByte);
-		byte[] minorVersionByte = Utils.copyByte(src, 26, 2);
-		config.minorVersion = Utils.byte2Short(minorVersionByte);
-		byte[] versionByte = Utils.copyByte(src, 24, 4);
-		config.version = Utils.byte2int(versionByte);
-		
-		//ÒÔÏÂ½á¹¹ÊÇUnion
-		byte[] screenLayoutByte = Utils.copyByte(src, 28, 1);
-		config.screenLayout = screenLayoutByte[0];
-		byte[] uiModeByte = Utils.copyByte(src, 29, 1);
-		config.uiMode = uiModeByte[0];
-		byte[] smallestScreenWidthDpByte = Utils.copyByte(src, 30, 2);
-		config.smallestScreenWidthDp = Utils.byte2Short(smallestScreenWidthDpByte);
-		byte[] screenConfigByte = Utils.copyByte(src, 28, 4);
-		config.screenConfig = Utils.byte2int(screenConfigByte);
-		
-		//ÒÔÏÂ½á¹¹ÊÇUnion
-		byte[] screenWidthDpByte = Utils.copyByte(src, 32, 2);
-		config.screenWidthDp = Utils.byte2Short(screenWidthDpByte);
-		byte[] screenHeightDpByte = Utils.copyByte(src, 34, 2);
-		config.screenHeightDp = Utils.byte2Short(screenHeightDpByte);
-		byte[] screenSizeDpByte = Utils.copyByte(src, 32, 4);
-		config.screenSizeDp = Utils.byte2int(screenSizeDpByte);
-		
-		byte[] localeScriptByte = Utils.copyByte(src, 36, 4);
-		config.localeScript = localeScriptByte;
-		
-		byte[] localeVariantByte = Utils.copyByte(src, 40, 8);
-		config.localeVariant = localeVariantByte;
-		return config;
-	}
-	
-	/**
-	 * Í³Ò»½âÎö×Ö·û´®ÄÚÈÝ
-	 * @param src
-	 * @param stringList
-	 * @param stringOffset
-	 * @return
-	 */
-	public static ResStringPoolHeader parseStringPoolChunk(byte[] src, ArrayList<String> stringList, int stringOffset){
-		ResStringPoolHeader stringPoolHeader = new ResStringPoolHeader();
-		
-		//½âÎöÍ·²¿ÐÅÏ¢
-		stringPoolHeader.header = parseResChunkHeader(src, stringOffset);
-		
-		System.out.println("header size:"+stringPoolHeader.header.headerSize);
-		System.out.println("size:"+stringPoolHeader.header.size);
-		
-		int offset = stringOffset + stringPoolHeader.header.getHeaderSize();
-		
-		//»ñÈ¡×Ö·û´®µÄ¸öÊý
-		byte[] stringCountByte = Utils.copyByte(src, offset, 4);
-		stringPoolHeader.stringCount = Utils.byte2int(stringCountByte);
-		
-		//½âÎöÑùÊ½µÄ¸öÊý
-		byte[] styleCountByte = Utils.copyByte(src, offset+4, 4);
-		stringPoolHeader.styleCount = Utils.byte2int(styleCountByte);
-		
-		//ÕâÀï±íÊ¾×Ö·û´®µÄ¸ñÊ½:UTF-8/UTF-16
-		byte[] flagByte = Utils.copyByte(src, offset+8, 4);
-		System.out.println("flag:"+Utils.bytesToHexString(flagByte));
-		stringPoolHeader.flags = Utils.byte2int(flagByte);
-		
-		//×Ö·û´®ÄÚÈÝµÄ¿ªÊ¼Î»ÖÃ
-		byte[] stringStartByte = Utils.copyByte(src, offset+12, 4);
-		stringPoolHeader.stringsStart = Utils.byte2int(stringStartByte);
-		System.out.println("string start:"+Utils.bytesToHexString(stringStartByte));
-		
-		//ÑùÊ½ÄÚÈÝµÄ¿ªÊ¼Î»ÖÃ
-		byte[] sytleStartByte = Utils.copyByte(src, offset+16, 4);
-		stringPoolHeader.stylesStart = Utils.byte2int(sytleStartByte);
-		System.out.println("style start:"+Utils.bytesToHexString(sytleStartByte));
-		
-		//»ñÈ¡×Ö·û´®ÄÚÈÝµÄË÷ÒýÊý×éºÍÑùÊ½ÄÚÈÝµÄË÷ÒýÊý×é
-		int[] stringIndexAry = new int[stringPoolHeader.stringCount];
-		int[] styleIndexAry = new int[stringPoolHeader.styleCount];
-		
-		System.out.println("string count:"+stringPoolHeader.stringCount);
-		System.out.println("style count:"+stringPoolHeader.styleCount);
-		
-		int stringIndex = offset + 20;
-		for(int i=0;i<stringPoolHeader.stringCount;i++){
-			stringIndexAry[i] = Utils.byte2int(Utils.copyByte(src, stringIndex+i*4, 4));
-		}
-		
-		int styleIndex = stringIndex + 4*stringPoolHeader.stringCount;
-		for(int i=0;i<stringPoolHeader.styleCount;i++){
-			styleIndexAry[i] = Utils.byte2int(Utils.copyByte(src,  styleIndex+i*4, 4));
-		}
-		
-		//Ã¿¸ö×Ö·û´®µÄÍ·Á½¸ö×Ö½ÚµÄ×îºóÒ»¸ö×Ö½ÚÊÇ×Ö·û´®µÄ³¤¶È
-		//ÕâÀï»ñÈ¡ËùÓÐ×Ö·û´®µÄÄÚÈÝ
-		int stringContentIndex = styleIndex + stringPoolHeader.styleCount*4;
-		System.out.println("string index:"+Utils.bytesToHexString(Utils.int2Byte(stringContentIndex)));
-		int index = 0;
-		while(index < stringPoolHeader.stringCount){
-			byte[] stringSizeByte = Utils.copyByte(src, stringContentIndex, 2);
-			int stringSize = (stringSizeByte[1] & 0x7F);
-			if(stringSize != 0){
-				String val = "";
-				try{
-					val = new String(Utils.copyByte(src, stringContentIndex+2, stringSize), "utf-8");
-				}catch(Exception e){
-					System.out.println("string encode error:"+e.toString());
-				}
-				stringList.add(val);
-			}else{
-				stringList.add("");
-			}
-			stringContentIndex += (stringSize+3);
-			index++;
-		}
-		for(String str : stringList){
-			System.out.println("str:"+str);
-		}
-		
-		return stringPoolHeader;
-		
-	}
-	
-	/**
-	 * ½âÎö×ÊÔ´Í·²¿ÐÅÏ¢
-	 * ËùÓÐµÄChunk¹«¹²µÄÍ·²¿ÐÅÏ¢
-	 * @param src
-	 * @param start
-	 * @return
-	 */
-	private static ResChunkHeader parseResChunkHeader(byte[] src, int start){
-		
-		ResChunkHeader header = new ResChunkHeader();
-		
-		//½âÎöÍ·²¿ÀàÐÍ
-		byte[] typeByte = Utils.copyByte(src, start, 2);
-		header.type = Utils.byte2Short(typeByte);
-		
-		//½âÎöÍ·²¿´óÐ¡
-		byte[] headerSizeByte = Utils.copyByte(src, start+2, 2);
-		header.headerSize = Utils.byte2Short(headerSizeByte);
-		
-		//½âÎöÕû¸öChunkµÄ´óÐ¡
-		byte[] tableSizeByte = Utils.copyByte(src, start+4, 4);
-		header.size = Utils.byte2int(tableSizeByte);
-		
-		return header;
-	}
-	
-	/**
-	 * ÅÐ¶ÏÊÇ·ñµ½ÎÄ¼þÄ©Î²ÁË
-	 * @param length
-	 * @return
-	 */
-	public static boolean isEnd(int length){
-		if(resTypeOffset>=length){
-			return true;
-		}
-		return false;
-	}
-	
-	/**
-	 * ÅÐ¶ÏÊÇ²»ÊÇÀàÐÍÃèÊö·û
-	 * @param src
-	 * @return
-	 */
-	public static boolean isTypeSpec(byte[] src){
-		ResChunkHeader header = parseResChunkHeader(src, resTypeOffset);
-		if(header.type == 0x0202){
-			return true;
-		}
-		return false;
-	}
-	
-	public static String getResString(int index){
-		if(index >= resStringList.size() || index < 0){
-			return "";
-		}
-		return resStringList.get(index);
-	}
-	
-	public static String getKeyString(int index){
-		if(index >= keyStringList.size() || index < 0){
-			return "";
-		}
-		return keyStringList.get(index);
-	}
-	
-	/**
-	 * »ñÈ¡×ÊÔ´id
-	 * ÕâÀï¸ßÎ»ÊÇpackid£¬ÖÐÎ»ÊÇrestypeid£¬µØÎ»ÊÇentryid
-	 * @param entryid
-	 * @return
-	 */
-	public static int getResId(int entryid){
-		return (((packId)<<24) | (((resTypeId) & 0xFF)<<16) | (entryid & 0xFFFF));
-	}
+
+    private static int resStringPoolChunkOffset;//ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Øµï¿½Æ«ï¿½ï¿½Öµ
+    private static int packageChunkOffset;//ï¿½ï¿½ï¿½ï¿½ï¿½Ýµï¿½Æ«ï¿½ï¿½Öµ
+    private static int keyStringPoolChunkOffset;//keyï¿½Ö·ï¿½ï¿½ï¿½ï¿½Øµï¿½Æ«ï¿½ï¿½Öµ
+    private static int typeStringPoolChunkOffset;//ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Øµï¿½Æ«ï¿½ï¿½Öµ
+
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½Íµï¿½Æ«ï¿½ï¿½Öµ
+    private static int resTypeOffset;
+
+    private static ArrayList<String> resStringList = new ArrayList<String>();//ï¿½ï¿½ï¿½Ðµï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½
+    private static ArrayList<String> keyStringList = new ArrayList<String>();//ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½Ô´keyï¿½ï¿½Öµï¿½Ä³ï¿½
+    private static ArrayList<String> typeStringList = new ArrayList<String>();//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íµï¿½Öµï¿½Ä³ï¿½
+
+    //ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½idï¿½ï¿½ï¿½ï¿½ï¿½ï¿½id
+    private static int packId;
+    private static int resTypeId;
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½Ï¢
+     *
+     * @param src
+     */
+    public static void parseResTableHeaderChunk(byte[] src) {
+        ResTableHeader resTableHeader = new ResTableHeader();
+
+        resTableHeader.header = parseResChunkHeader(src, 0);
+
+        resStringPoolChunkOffset = resTableHeader.header.headerSize;
+
+        //ï¿½ï¿½ï¿½ï¿½PackageCountï¿½ï¿½ï¿½ï¿½(Ò»ï¿½ï¿½apkï¿½ï¿½ï¿½Ü°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Packageï¿½ï¿½Ô´)
+        byte[] packageCountByte = Utils.copyByte(src, resTableHeader.header.getHeaderSize(), 4);
+        resTableHeader.packageCount = Utils.byte2int(packageCountByte);
+
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½Resource.arscï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     */
+    public static void parseResStringPoolChunk(byte[] src) {
+        ResStringPoolHeader stringPoolHeader = parseStringPoolChunk(src, resStringList, resStringPoolChunkOffset);
+        packageChunkOffset = resStringPoolChunkOffset + stringPoolHeader.header.size;
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½Packageï¿½ï¿½Ï¢
+     *
+     * @param src
+     */
+    public static void parsePackage(byte[] src) {
+        System.out.println("pchunkoffset:" + Utils.bytesToHexString(Utils.int2Byte(packageChunkOffset)));
+        ResTablePackage resTabPackage = new ResTablePackage();
+        //ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½Ï¢
+        resTabPackage.header = parseResChunkHeader(src, packageChunkOffset);
+
+        System.out.println("package size:" + resTabPackage.header.headerSize);
+
+        int offset = packageChunkOffset + resTabPackage.header.getHeaderSize();
+
+        //ï¿½ï¿½ï¿½ï¿½packId
+        byte[] idByte = Utils.copyByte(src, offset, 4);
+        resTabPackage.id = Utils.byte2int(idByte);
+        packId = resTabPackage.id;
+
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        System.out.println("package offset:" + Utils.bytesToHexString(Utils.int2Byte(offset + 4)));
+        byte[] nameByte = Utils.copyByte(src, offset + 4, 128 * 2);//ï¿½ï¿½ï¿½ï¿½ï¿½128ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ÎµÄ´ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½Ô²é¿´ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½charï¿½ï¿½ï¿½ÍµÄ£ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½2
+        String packageName = new String(nameByte);
+        packageName = Utils.filterStringNull(packageName);
+        System.out.println("pkgName:" + packageName);
+
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½Öµ
+        byte[] typeStringsByte = Utils.copyByte(src, offset + 4 + 128 * 2, 4);
+        resTabPackage.typeStrings = Utils.byte2int(typeStringsByte);
+        System.out.println("typeString:" + resTabPackage.typeStrings);
+
+        //ï¿½ï¿½ï¿½ï¿½lastPublicTypeï¿½Ö¶ï¿½
+        byte[] lastPublicType = Utils.copyByte(src, offset + 8 + 128 * 2, 4);
+        resTabPackage.lastPublicType = Utils.byte2int(lastPublicType);
+
+        //ï¿½ï¿½ï¿½ï¿½keyStringï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½Öµ
+        byte[] keyStrings = Utils.copyByte(src, offset + 12 + 128 * 2, 4);
+        resTabPackage.keyStrings = Utils.byte2int(keyStrings);
+        System.out.println("keyString:" + resTabPackage.keyStrings);
+
+        //ï¿½ï¿½ï¿½ï¿½lastPublicKey
+        byte[] lastPublicKey = Utils.copyByte(src, offset + 12 + 128 * 2, 4);
+        resTabPackage.lastPublicKey = Utils.byte2int(lastPublicKey);
+
+        //ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½Öµ
+        keyStringPoolChunkOffset = (packageChunkOffset + resTabPackage.keyStrings);
+        typeStringPoolChunkOffset = (packageChunkOffset + resTabPackage.typeStrings);
+
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     */
+    public static void parseTypeStringPoolChunk(byte[] src) {
+        System.out.println("typestring offset:" + Utils.bytesToHexString(Utils.int2Byte(typeStringPoolChunkOffset)));
+        ResStringPoolHeader stringPoolHeader = parseStringPoolChunk(src, typeStringList, typeStringPoolChunkOffset);
+        System.out.println("size:" + stringPoolHeader.header.size);
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½keyï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     */
+    public static void parseKeyStringPoolChunk(byte[] src) {
+        System.out.println("keystring offset:" + Utils.bytesToHexString(Utils.int2Byte(keyStringPoolChunkOffset)));
+        ResStringPoolHeader stringPoolHeader = parseStringPoolChunk(src, keyStringList, keyStringPoolChunkOffset);
+        System.out.println("size:" + stringPoolHeader.header.size);
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½keyï¿½Ö·ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½Öµï¿½ï¿½resTypeï¿½ï¿½Æ«ï¿½ï¿½Öµ,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        resTypeOffset = (keyStringPoolChunkOffset + stringPoolHeader.header.size);
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½ResTypeSepcï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     */
+    public static void parseResTypeSpec(byte[] src) {
+        System.out.println("res type spec offset:" + Utils.bytesToHexString(Utils.int2Byte(resTypeOffset)));
+        ResTableTypeSpec typeSpec = new ResTableTypeSpec();
+        //ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½Ï¢
+        typeSpec.header = parseResChunkHeader(src, resTypeOffset);
+
+        int offset = (resTypeOffset + typeSpec.header.getHeaderSize());
+
+        //ï¿½ï¿½ï¿½ï¿½idï¿½ï¿½ï¿½ï¿½
+        byte[] idByte = Utils.copyByte(src, offset, 1);
+        typeSpec.id = (byte) (idByte[0] & 0xFF);
+        resTypeId = typeSpec.id;
+
+        //ï¿½ï¿½ï¿½ï¿½res0ï¿½Ö¶ï¿½,ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½Ç±ï¿½ï¿½ÃµÄ£ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½0
+        byte[] res0Byte = Utils.copyByte(src, offset + 1, 1);
+        typeSpec.res0 = (byte) (res0Byte[0] & 0xFF);
+
+        //ï¿½ï¿½ï¿½ï¿½res1ï¿½Ö¶Î£ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½Ç±ï¿½ï¿½ÃµÄ£ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½0
+        byte[] res1Byte = Utils.copyByte(src, offset + 2, 2);
+        typeSpec.res1 = Utils.byte2Short(res1Byte);
+
+        //entryï¿½ï¿½ï¿½Ü¸ï¿½ï¿½ï¿½
+        byte[] entryCountByte = Utils.copyByte(src, offset + 4, 4);
+        typeSpec.entryCount = Utils.byte2int(entryCountByte);
+
+        System.out.println("res type spec:" + typeSpec);
+
+        System.out.println("type_name:" + typeStringList.get(typeSpec.id - 1));
+
+        //ï¿½ï¿½È¡entryCountï¿½ï¿½intï¿½ï¿½ï¿½ï¿½
+        int[] intAry = new int[typeSpec.entryCount];
+        int intAryOffset = resTypeOffset + typeSpec.header.headerSize;
+        System.out.print("int element:");
+        for (int i = 0; i < typeSpec.entryCount; i++) {
+            int element = Utils.byte2int(Utils.copyByte(src, intAryOffset + i * 4, 4));
+            intAry[i] = element;
+            System.out.print(element + ",");
+        }
+        System.out.println();
+
+        resTypeOffset += typeSpec.header.size;
+
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     */
+    public static void parseResTypeInfo(byte[] src) {
+        System.out.println("type chunk offset:" + Utils.bytesToHexString(Utils.int2Byte(resTypeOffset)));
+        ResTableType type = new ResTableType();
+        //ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½Ï¢
+        type.header = parseResChunkHeader(src, resTypeOffset);
+
+        int offset = (resTypeOffset + type.header.getHeaderSize());
+
+        //ï¿½ï¿½ï¿½ï¿½typeï¿½ï¿½idÖµ
+        byte[] idByte = Utils.copyByte(src, offset, 1);
+        type.id = (byte) (idByte[0] & 0xFF);
+
+        //ï¿½ï¿½ï¿½ï¿½res0ï¿½Ö¶Îµï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶Î£ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½0
+        byte[] res0 = Utils.copyByte(src, offset + 1, 1);
+        type.res0 = (byte) (res0[0] & 0xFF);
+
+        //ï¿½ï¿½ï¿½ï¿½res1ï¿½Ö¶Îµï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶Î£ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½0
+        byte[] res1 = Utils.copyByte(src, offset + 2, 2);
+        type.res1 = Utils.byte2Short(res1);
+
+        byte[] entryCountByte = Utils.copyByte(src, offset + 4, 4);
+        type.entryCount = Utils.byte2int(entryCountByte);
+
+        byte[] entriesStartByte = Utils.copyByte(src, offset + 8, 4);
+        type.entriesStart = Utils.byte2int(entriesStartByte);
+
+        ResTableConfig resConfig = new ResTableConfig();
+        resConfig = parseResTableConfig(Utils.copyByte(src, offset + 12, resConfig.getSize()));
+        System.out.println("config:" + resConfig);
+
+        System.out.println("res type info:" + type);
+
+        System.out.println("type_name:" + typeStringList.get(type.id - 1));
+
+        //ï¿½È»ï¿½È¡entryCountï¿½ï¿½intï¿½ï¿½ï¿½ï¿½
+        System.out.print("type int elements:");
+        int[] intAry = new int[type.entryCount];
+        for (int i = 0; i < type.entryCount; i++) {
+            int element = Utils.byte2int(Utils.copyByte(src, resTypeOffset + type.header.headerSize + i * 4, 4));
+            intAry[i] = element;
+            System.out.print(element + ",");
+        }
+        System.out.println();
+
+        //ï¿½ï¿½ï¿½ï¿ªÊ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ResEntryï¿½ï¿½ResValue
+        int entryAryOffset = resTypeOffset + type.entriesStart;
+        ResTableEntry[] tableEntryAry = new ResTableEntry[type.entryCount];
+        ResValue[] resValueAry = new ResValue[type.entryCount];
+        System.out.println("entry offset:" + Utils.bytesToHexString(Utils.int2Byte(entryAryOffset)));
+
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ResMapEntryï¿½Ä»ï¿½ï¿½ï¿½Æ«ï¿½ï¿½Öµï¿½Ç²ï¿½Ò»ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ã²»Í¬ï¿½ï¿½Æ«ï¿½ï¿½Öµ
+        int bodySize = 0, valueOffset = entryAryOffset;
+        for (int i = 0; i < type.entryCount; i++) {
+            int resId = getResId(i);
+            System.out.println("resId:" + Utils.bytesToHexString(Utils.int2Byte(resId)));
+            ResTableEntry entry = new ResTableEntry();
+            ResValue value = new ResValue();
+            valueOffset += bodySize;
+            System.out.println("valueOffset:" + Utils.bytesToHexString(Utils.int2Byte(valueOffset)));
+            entry = parseResEntry(Utils.copyByte(src, valueOffset, entry.getSize()));
+
+            //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òª×¢ï¿½ï¿½ï¿½ï¿½Ç£ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½entryï¿½ï¿½flagï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Îª1,ï¿½ï¿½ï¿½Îª1ï¿½Ä»ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ResTable_map_entry
+            if (entry.flags == 1) {
+                //ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íµï¿½value
+                ResTableMapEntry mapEntry = new ResTableMapEntry();
+                mapEntry = parseResMapEntry(Utils.copyByte(src, valueOffset, mapEntry.getSize()));
+                System.out.println("map entry:" + mapEntry);
+                ResTableMap resMap = new ResTableMap();
+                for (int j = 0; j < mapEntry.count; j++) {
+                    int mapOffset = valueOffset + mapEntry.getSize() + resMap.getSize() * j;
+                    resMap = parseResTableMap(Utils.copyByte(src, mapOffset, resMap.getSize()));
+                    System.out.println("map:" + resMap);
+                }
+                bodySize = mapEntry.getSize() + resMap.getSize() * mapEntry.count;
+            } else {
+                System.out.println("entry:" + entry);
+                //ï¿½ï¿½ï¿½ï¿½ï¿½Ç¼òµ¥µï¿½ï¿½ï¿½ï¿½Íµï¿½value
+                value = parseResValue(Utils.copyByte(src, valueOffset + entry.getSize(), value.getSize()));
+                System.out.println("value:" + value);
+                bodySize = entry.getSize() + value.getSize();
+            }
+
+            tableEntryAry[i] = entry;
+            resValueAry[i] = value;
+
+            System.out.println("======================================");
+        }
+
+        resTypeOffset += type.header.size;
+
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½ResEntryï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     * @return
+     */
+    public static ResTableEntry parseResEntry(byte[] src) {
+        ResTableEntry entry = new ResTableEntry();
+
+        byte[] sizeByte = Utils.copyByte(src, 0, 2);
+        entry.size = Utils.byte2Short(sizeByte);
+
+        byte[] flagByte = Utils.copyByte(src, 2, 2);
+        entry.flags = Utils.byte2Short(flagByte);
+
+        ResStringPoolRef key = new ResStringPoolRef();
+        byte[] keyByte = Utils.copyByte(src, 4, 4);
+        key.index = Utils.byte2int(keyByte);
+        entry.key = key;
+
+        return entry;
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½ResMapEntryï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     * @return
+     */
+    public static ResTableMapEntry parseResMapEntry(byte[] src) {
+        ResTableMapEntry entry = new ResTableMapEntry();
+
+        byte[] sizeByte = Utils.copyByte(src, 0, 2);
+        entry.size = Utils.byte2Short(sizeByte);
+
+        byte[] flagByte = Utils.copyByte(src, 2, 2);
+        entry.flags = Utils.byte2Short(flagByte);
+
+        ResStringPoolRef key = new ResStringPoolRef();
+        byte[] keyByte = Utils.copyByte(src, 4, 4);
+        key.index = Utils.byte2int(keyByte);
+        entry.key = key;
+
+        ResTableRef ref = new ResTableRef();
+        byte[] identByte = Utils.copyByte(src, 8, 4);
+        ref.ident = Utils.byte2int(identByte);
+        entry.parent = ref;
+        byte[] countByte = Utils.copyByte(src, 12, 4);
+        entry.count = Utils.byte2int(countByte);
+
+        return entry;
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½ResValueï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     * @return
+     */
+    public static ResValue parseResValue(byte[] src) {
+        ResValue resValue = new ResValue();
+        byte[] sizeByte = Utils.copyByte(src, 0, 2);
+        resValue.size = Utils.byte2Short(sizeByte);
+
+        byte[] res0Byte = Utils.copyByte(src, 2, 1);
+        resValue.res0 = (byte) (res0Byte[0] & 0xFF);
+
+        byte[] dataType = Utils.copyByte(src, 3, 1);
+        resValue.dataType = (byte) (dataType[0] & 0xFF);
+
+        byte[] data = Utils.copyByte(src, 4, 4);
+        resValue.data = Utils.byte2int(data);
+
+        return resValue;
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½ResTableMapï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     * @return
+     */
+    public static ResTableMap parseResTableMap(byte[] src) {
+        ResTableMap tableMap = new ResTableMap();
+
+        ResTableRef ref = new ResTableRef();
+        byte[] identByte = Utils.copyByte(src, 0, ref.getSize());
+        ref.ident = Utils.byte2int(identByte);
+        tableMap.name = ref;
+
+        ResValue value = new ResValue();
+        value = parseResValue(Utils.copyByte(src, ref.getSize(), value.getSize()));
+        tableMap.value = value;
+
+        return tableMap;
+
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½ResTableConfigï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+     *
+     * @param src
+     * @return
+     */
+    public static ResTableConfig parseResTableConfig(byte[] src) {
+        ResTableConfig config = new ResTableConfig();
+
+        byte[] sizeByte = Utils.copyByte(src, 0, 4);
+        config.size = Utils.byte2int(sizeByte);
+
+        //ï¿½ï¿½ï¿½Â½á¹¹ï¿½ï¿½Union
+        byte[] mccByte = Utils.copyByte(src, 4, 2);
+        config.mcc = Utils.byte2Short(mccByte);
+        byte[] mncByte = Utils.copyByte(src, 6, 2);
+        config.mnc = Utils.byte2Short(mncByte);
+        byte[] imsiByte = Utils.copyByte(src, 4, 4);
+        config.imsi = Utils.byte2int(imsiByte);
+
+        //ï¿½ï¿½ï¿½Â½á¹¹ï¿½ï¿½Union
+        byte[] languageByte = Utils.copyByte(src, 8, 2);
+        config.language = languageByte;
+        byte[] countryByte = Utils.copyByte(src, 10, 2);
+        config.country = countryByte;
+        byte[] localeByte = Utils.copyByte(src, 8, 4);
+        config.locale = Utils.byte2int(localeByte);
+
+        //ï¿½ï¿½ï¿½Â½á¹¹ï¿½ï¿½Union
+        byte[] orientationByte = Utils.copyByte(src, 12, 1);
+        config.orientation = orientationByte[0];
+        byte[] touchscreenByte = Utils.copyByte(src, 13, 1);
+        config.touchscreen = touchscreenByte[0];
+        byte[] densityByte = Utils.copyByte(src, 14, 2);
+        config.density = Utils.byte2Short(densityByte);
+        byte[] screenTypeByte = Utils.copyByte(src, 12, 4);
+        config.screenType = Utils.byte2int(screenTypeByte);
+
+        //ï¿½ï¿½ï¿½Â½á¹¹ï¿½ï¿½Union
+        byte[] keyboardByte = Utils.copyByte(src, 16, 1);
+        config.keyboard = keyboardByte[0];
+        byte[] navigationByte = Utils.copyByte(src, 17, 1);
+        config.navigation = navigationByte[0];
+        byte[] inputFlagsByte = Utils.copyByte(src, 18, 1);
+        config.inputFlags = inputFlagsByte[0];
+        byte[] inputPad0Byte = Utils.copyByte(src, 19, 1);
+        config.inputPad0 = inputPad0Byte[0];
+        byte[] inputByte = Utils.copyByte(src, 16, 4);
+        config.input = Utils.byte2int(inputByte);
+
+        //ï¿½ï¿½ï¿½Â½á¹¹ï¿½ï¿½Union
+        byte[] screenWidthByte = Utils.copyByte(src, 20, 2);
+        config.screenWidth = Utils.byte2Short(screenWidthByte);
+        byte[] screenHeightByte = Utils.copyByte(src, 22, 2);
+        config.screenHeight = Utils.byte2Short(screenHeightByte);
+        byte[] screenSizeByte = Utils.copyByte(src, 20, 4);
+        config.screenSize = Utils.byte2int(screenSizeByte);
+
+        //ï¿½ï¿½ï¿½Â½á¹¹ï¿½ï¿½Union
+        byte[] sdVersionByte = Utils.copyByte(src, 24, 2);
+        config.sdVersion = Utils.byte2Short(sdVersionByte);
+        byte[] minorVersionByte = Utils.copyByte(src, 26, 2);
+        config.minorVersion = Utils.byte2Short(minorVersionByte);
+        byte[] versionByte = Utils.copyByte(src, 24, 4);
+        config.version = Utils.byte2int(versionByte);
+
+        //ï¿½ï¿½ï¿½Â½á¹¹ï¿½ï¿½Union
+        byte[] screenLayoutByte = Utils.copyByte(src, 28, 1);
+        config.screenLayout = screenLayoutByte[0];
+        byte[] uiModeByte = Utils.copyByte(src, 29, 1);
+        config.uiMode = uiModeByte[0];
+        byte[] smallestScreenWidthDpByte = Utils.copyByte(src, 30, 2);
+        config.smallestScreenWidthDp = Utils.byte2Short(smallestScreenWidthDpByte);
+        byte[] screenConfigByte = Utils.copyByte(src, 28, 4);
+        config.screenConfig = Utils.byte2int(screenConfigByte);
+
+        //ï¿½ï¿½ï¿½Â½á¹¹ï¿½ï¿½Union
+        byte[] screenWidthDpByte = Utils.copyByte(src, 32, 2);
+        config.screenWidthDp = Utils.byte2Short(screenWidthDpByte);
+        byte[] screenHeightDpByte = Utils.copyByte(src, 34, 2);
+        config.screenHeightDp = Utils.byte2Short(screenHeightDpByte);
+        byte[] screenSizeDpByte = Utils.copyByte(src, 32, 4);
+        config.screenSizeDp = Utils.byte2int(screenSizeDpByte);
+
+        byte[] localeScriptByte = Utils.copyByte(src, 36, 4);
+        config.localeScript = localeScriptByte;
+
+        byte[] localeVariantByte = Utils.copyByte(src, 40, 8);
+        config.localeVariant = localeVariantByte;
+        return config;
+    }
+
+    /**
+     * Í³Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     * @param stringList
+     * @param stringOffset
+     * @return
+     */
+    public static ResStringPoolHeader parseStringPoolChunk(byte[] src, ArrayList<String> stringList, int stringOffset) {
+        ResStringPoolHeader stringPoolHeader = new ResStringPoolHeader();
+
+        //ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½Ï¢
+        stringPoolHeader.header = parseResChunkHeader(src, stringOffset);
+
+        System.out.println("header size:" + stringPoolHeader.header.headerSize);
+        System.out.println("size:" + stringPoolHeader.header.size);
+
+        int offset = stringOffset + stringPoolHeader.header.getHeaderSize();
+
+        //ï¿½ï¿½È¡ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½
+        byte[] stringCountByte = Utils.copyByte(src, offset, 4);
+        stringPoolHeader.stringCount = Utils.byte2int(stringCountByte);
+
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½Ä¸ï¿½ï¿½ï¿½
+        byte[] styleCountByte = Utils.copyByte(src, offset + 4, 4);
+        stringPoolHeader.styleCount = Utils.byte2int(styleCountByte);
+
+        //ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½Ê½:UTF-8/UTF-16
+        byte[] flagByte = Utils.copyByte(src, offset + 8, 4);
+        System.out.println("flag:" + Utils.bytesToHexString(flagByte));
+        stringPoolHeader.flags = Utils.byte2int(flagByte);
+
+        //ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÝµÄ¿ï¿½Ê¼Î»ï¿½ï¿½
+        byte[] stringStartByte = Utils.copyByte(src, offset + 12, 4);
+        stringPoolHeader.stringsStart = Utils.byte2int(stringStartByte);
+        System.out.println("string start:" + Utils.bytesToHexString(stringStartByte));
+
+        //ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ÝµÄ¿ï¿½Ê¼Î»ï¿½ï¿½
+        byte[] sytleStartByte = Utils.copyByte(src, offset + 16, 4);
+        stringPoolHeader.stylesStart = Utils.byte2int(sytleStartByte);
+        System.out.println("style start:" + Utils.bytesToHexString(sytleStartByte));
+
+        //ï¿½ï¿½È¡ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ýµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½Ýµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        int[] stringIndexAry = new int[stringPoolHeader.stringCount];
+        int[] styleIndexAry = new int[stringPoolHeader.styleCount];
+
+        System.out.println("string count:" + stringPoolHeader.stringCount);
+        System.out.println("style count:" + stringPoolHeader.styleCount);
+
+        int stringIndex = offset + 20;
+        for (int i = 0; i < stringPoolHeader.stringCount; i++) {
+            stringIndexAry[i] = Utils.byte2int(Utils.copyByte(src, stringIndex + i * 4, 4));
+        }
+
+        int styleIndex = stringIndex + 4 * stringPoolHeader.stringCount;
+        for (int i = 0; i < stringPoolHeader.styleCount; i++) {
+            styleIndexAry[i] = Utils.byte2int(Utils.copyByte(src, styleIndex + i * 4, 4));
+        }
+
+        //Ã¿ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½ï¿½Ö½Úµï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½
+        //ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        int stringContentIndex = styleIndex + stringPoolHeader.styleCount * 4;
+        System.out.println("string index:" + Utils.bytesToHexString(Utils.int2Byte(stringContentIndex)));
+        int index = 0;
+        while (index < stringPoolHeader.stringCount) {
+            byte[] stringSizeByte = Utils.copyByte(src, stringContentIndex, 2);
+            int stringSize = (stringSizeByte[1] & 0x7F);
+            if (stringSize != 0) {
+                String val = "";
+                try {
+                    val = new String(Utils.copyByte(src, stringContentIndex + 2, stringSize), "utf-8");
+                } catch (Exception e) {
+                    System.out.println("string encode error:" + e.toString());
+                }
+                stringList.add(val);
+            } else {
+                stringList.add("");
+            }
+            stringContentIndex += (stringSize + 3);
+            index++;
+        }
+        for (String str : stringList) {
+            System.out.println("str:" + str);
+        }
+
+        return stringPoolHeader;
+
+    }
+
+    /**
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Í·ï¿½ï¿½ï¿½ï¿½Ï¢
+     * ï¿½ï¿½ï¿½Ðµï¿½Chunkï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½Ï¢
+     *
+     * @param src
+     * @param start
+     * @return
+     */
+    private static ResChunkHeader parseResChunkHeader(byte[] src, int start) {
+
+        ResChunkHeader header = new ResChunkHeader();
+
+        //ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        byte[] typeByte = Utils.copyByte(src, start, 2);
+        header.type = Utils.byte2Short(typeByte);
+
+        //ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½Ð¡
+        byte[] headerSizeByte = Utils.copyByte(src, start + 2, 2);
+        header.headerSize = Utils.byte2Short(headerSizeByte);
+
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Chunkï¿½Ä´ï¿½Ð¡
+        byte[] tableSizeByte = Utils.copyByte(src, start + 4, 4);
+        header.size = Utils.byte2int(tableSizeByte);
+
+        return header;
+    }
+
+    /**
+     * ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½Ä¼ï¿½Ä©Î²ï¿½ï¿½
+     *
+     * @param length
+     * @return
+     */
+    public static boolean isEnd(int length) {
+        if (resTypeOffset >= length) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * ï¿½Ð¶ï¿½ï¿½Ç²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     *
+     * @param src
+     * @return
+     */
+    public static boolean isTypeSpec(byte[] src) {
+        ResChunkHeader header = parseResChunkHeader(src, resTypeOffset);
+        if (header.type == 0x0202) {
+            return true;
+        }
+        return false;
+    }
+
+    public static String getResString(int index) {
+        if (index >= resStringList.size() || index < 0) {
+            return "";
+        }
+        return resStringList.get(index);
+    }
+
+    public static String getKeyString(int index) {
+        if (index >= keyStringList.size() || index < 0) {
+            return "";
+        }
+        return keyStringList.get(index);
+    }
+
+    /**
+     * ï¿½ï¿½È¡ï¿½ï¿½Ô´id
+     * ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½packidï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½restypeidï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½entryid
+     *
+     * @param entryid
+     * @return
+     */
+    public static int getResId(int entryid) {
+        return (((packId) << 24) | (((resTypeId) & 0xFF) << 16) | (entryid & 0xFFFF));
+    }
 
 }

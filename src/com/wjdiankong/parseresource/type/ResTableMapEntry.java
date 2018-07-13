@@ -1,33 +1,33 @@
 package com.wjdiankong.parseresource.type;
 
 /**
- struct ResTable_map_entry : public ResTable_entry
- {
-     //Ö¸Ïò¸¸ResTable_map_entryµÄ×ÊÔ´ID£¬Èç¹ûÃ»ÓĞ¸¸ResTable_map_entry£¬ÔòµÈÓÚ0¡£
-     ResTable_ref parent;
-     //µÈÓÚºóÃæResTable_mapµÄÊıÁ¿
-     uint32_t count;
- };
- * @author i
+ * struct ResTable_map_entry : public ResTable_entry
+ * {
+ * //Ö¸ï¿½ï¿½ResTable_map_entryï¿½ï¿½ï¿½ï¿½Ô´IDï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ğ¸ï¿½ResTable_map_entryï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½
+ * ResTable_ref parent;
+ * //ï¿½ï¿½ï¿½Úºï¿½ï¿½ï¿½ResTable_mapï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * uint32_t count;
+ * };
  *
+ * @author i
  */
-public class ResTableMapEntry extends ResTableEntry{
-	
-	public ResTableRef parent;
-	public int count;
-	
-	public ResTableMapEntry(){
-		parent = new ResTableRef();
-	}
-	
-	@Override
-	public int getSize(){
-		return super.getSize() + parent.getSize() + 4;
-	}
-	
-	@Override
-	public String toString(){
-		return super.toString() + ",parent:"+parent.toString()+",count:"+count;
-	}
+public class ResTableMapEntry extends ResTableEntry {
+
+    public ResTableRef parent;
+    public int count;
+
+    public ResTableMapEntry() {
+        parent = new ResTableRef();
+    }
+
+    @Override
+    public int getSize() {
+        return super.getSize() + parent.getSize() + 4;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + ",parent:" + parent.toString() + ",count:" + count;
+    }
 
 }

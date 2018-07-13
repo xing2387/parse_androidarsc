@@ -1,32 +1,32 @@
 package com.wjdiankong.parseresource.type;
 
 /**
- struct ResStringPool_span
- {
-     enum {
-         END = 0xFFFFFFFF
-     };
-     //Ö¸ÏòÑùÊ½×Ö·û´®ÔÚ×Ö·û´®³ØÖÐÆ«ÒÆ,ÀýÈç´ÖÌåÑùÊ½<b>XXX</b>,Ôò´Ë´¦Ö¸Ïòb
-     ResStringPool_ref name;
-     //Ö¸ÏòÓ¦ÓÃÑùÊ½µÄµÚÒ»¸ö×Ö·û
-     uint32_t firstChar
-     //Ö¸ÏòÓ¦ÓÃÑùÊ½µÄ×îºóÒ»¸ö×Ö·û
-     uin32_t  lastChar;
- };
- * @author i
+ * struct ResStringPool_span
+ * {
+ * enum {
+ * END = 0xFFFFFFFF
+ * };
+ * //Ö¸ï¿½ï¿½ï¿½ï¿½Ê½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½<b>XXX</b>,ï¿½ï¿½Ë´ï¿½Ö¸ï¿½ï¿½b
+ * ResStringPool_ref name;
+ * //Ö¸ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½Ê½ï¿½Äµï¿½Ò»ï¿½ï¿½ï¿½Ö·ï¿½
+ * uint32_t firstChar
+ * //Ö¸ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö·ï¿½
+ * uin32_t  lastChar;
+ * };
  *
+ * @author i
  */
 public class ResStringPoolSpan {
-	
-	public final static int END = 0xFFFFFFFF;
-	
-	public ResStringPoolRef name;
-	public int firstChar;
-	public int lastChar;
-	
-	@Override
-	public String toString(){
-		return "name:"+name.toString()+",firstChar:"+firstChar+",lastChar:"+lastChar;
-	}
+
+    public final static int END = 0xFFFFFFFF;
+
+    public ResStringPoolRef name;
+    public int firstChar;
+    public int lastChar;
+
+    @Override
+    public String toString() {
+        return "name:" + name.toString() + ",firstChar:" + firstChar + ",lastChar:" + lastChar;
+    }
 
 }
