@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/src/com/wjdiankong/parseresource/ParseResourceUtils.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/com/wjdiankong/parseresource/type/ResStringPoolSpan.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/com/wjdiankong/parseresource/type/ResTableConfig.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/com/wjdiankong/parseresource/type/ResTableEntry.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/src/com/wjdiankong/parseresource/type/ResTableMap.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/com/wjdiankong/parseresource/type/ResTableMapEntry.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/com/wjdiankong/parseresource/type/ResValue.java" charset="UTF-8" />
+  </component>
+</project>

@@ -35,12 +35,12 @@ public class ResTableConfig {
     public final static int LAYOUTDIR_LTR = 0x01;
     public final static int LAYOUTDIR_RTL = 0x02;
 
-    /**
-     * uint32_t size;
-     */
-    public int size;
+	/**
+	 * uint32_t size;
+	 */
+	public int size;
 
-    //��Ӫ����Ϣ
+	//运营商信息
     /*
     union {
         struct {
@@ -52,13 +52,13 @@ public class ResTableConfig {
         uint32_t imsi;
     };*/
 
-    //����ʹ�õ���union
+    //这里使用的是union
     public short mcc;
     public short mnc;
 
     public int imsi;
 
-    //���ػ�
+    //本地化
     /*union {
         struct {
             char language[2];
@@ -66,23 +66,23 @@ public class ResTableConfig {
         };
         uint32_t locale;
     };*/
-    //���ﻹ��ʹ�õ�union
+    //这里还是使用的union
     public byte[] language = new byte[2];
     public byte[] country = new byte[2];
 
     public int locale;
 
-    //��Ļ����
-    //���ﻹ�ǲ���union�ṹ
+    //屏幕属性
+    //这里还是采用union结构
     /**
      * union {
-     * struct {
-     * uint8_t orientation;
-     * uint8_t touchscreen;
-     * uint16_t density;
-     * };
-     * uint32_t screenType;
-     * };
+        struct {
+            uint8_t orientation;
+            uint8_t touchscreen;
+            uint16_t density;
+        };
+        uint32_t screenType;
+    };
      */
     public byte orientation;
     public byte touchscreen;
@@ -90,19 +90,19 @@ public class ResTableConfig {
 
     public int screenType;
 
-    //��������
+    //输入属性
     /**
      * union {
-     * struct {
-     * uint8_t keyboard;
-     * uint8_t navigation;
-     * uint8_t inputFlags;
-     * uint8_t inputPad0;
-     * };
-     * uint32_t input;
-     * };
+        struct {
+            uint8_t keyboard;
+            uint8_t navigation;
+            uint8_t inputFlags;
+            uint8_t inputPad0;
+        };
+        uint32_t input;
+    };
      */
-    //���ﻹ�ǲ���union�ṹ��
+    //这里还是采用union结构体
     public byte keyboard;
     public byte navigation;
     public byte inputFlags;
@@ -110,77 +110,77 @@ public class ResTableConfig {
 
     public int input;
 
-    //��Ļ�ߴ�
+    //屏幕尺寸
     /**
      * union {
-     * struct {
-     * uint16_t screenWidth;
-     * uint16_t screenHeight;
-     * };
-     * uint32_t screenSize;
-     * };
+        struct {
+            uint16_t screenWidth;
+            uint16_t screenHeight;
+        };
+        uint32_t screenSize;
+    };
      */
-    //���ﻹ�ǲ���union�ṹ��
+    //这里还是采用union结构体
     public short screenWidth;
     public short screenHeight;
 
     public int screenSize;
 
-    //ϵͳ�汾
+    //系统版本
     /**
      * union {
-     * struct {
-     * uint16_t sdkVersion;
-     * // For now minorVersion must always be 0!!!  Its meaning
-     * // is currently undefined.
-     * uint16_t minorVersion;
-     * };
-     * uint32_t version;
-     * };
+        struct {
+            uint16_t sdkVersion;
+            // For now minorVersion must always be 0!!!  Its meaning
+            // is currently undefined.
+            uint16_t minorVersion;
+        };
+        uint32_t version;
+    };
      */
-    //���ﻹ�ǲ���union�ṹ��
+    //这里还是采用union结构体
     public short sdVersion;
     public short minorVersion;
 
     public int version;
 
-    //��Ļ����
+    //屏幕配置
     /**
      * union {
-     * struct {
-     * uint8_t screenLayout;
-     * uint8_t uiMode;
-     * uint16_t smallestScreenWidthDp;
-     * };
-     * uint32_t screenConfig;
-     * };
-     */
-    //���ﻹ�ǲ���union�ṹ��
+        struct {
+            uint8_t screenLayout;
+            uint8_t uiMode;
+            uint16_t smallestScreenWidthDp;
+        };
+        uint32_t screenConfig;
+    };
+    */
+    //这里还是采用union结构体
     public byte screenLayout;
     public byte uiMode;
     public short smallestScreenWidthDp;
 
     public int screenConfig;
 
-    //��Ļ�ߴ�
+    //屏幕尺寸
     /**
      * union {
-     * struct {
-     * uint16_t screenWidthDp;
-     * uint16_t screenHeightDp;
-     * };
-     * uint32_t screenSizeDp;
-     * };
+        struct {
+            uint16_t screenWidthDp;
+            uint16_t screenHeightDp;
+        };
+        uint32_t screenSizeDp;
+    };
      */
-    //���ﻹ�ǲ���union�ṹ��
+    //这里还是采用union结构体
     public short screenWidthDp;
     public short screenHeightDp;
 
     public int screenSizeDp;
 
     /**
-     * char localeScript[4];
-     * char localeVariant[8];
+     *  char localeScript[4];
+    	char localeVariant[8];
      */
     public byte[] localeScript = new byte[4];
     public byte[] localeVariant = new byte[8];
